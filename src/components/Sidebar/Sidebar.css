@@ -1,0 +1,56 @@
+.sidebar {
+    width: 200px;
+    background-color: #333;
+    color: white;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.profile-section {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.profile-icon {
+    width: 30px;
+    height: 30px;
+    background-color: #555;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.profile-text {
+    font-weight: bold;
+}
+
+.navigation ul {
+    list-style: none;
+    padding: 0;
+}
+
+.navigation li {
+    margin-bottom: 15px;
+}
+
+.nav-button {
+    background-color: #555;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.nav-button:hover {
+    background-color: #777;
+}
+
+.nav-button.active {
+    background-color: #007bff; /* Пример активной кнопки */
+}
