@@ -1,0 +1,263 @@
+.day-tasks-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.day-tasks-modal {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 420px;
+    max-height: 80vh;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.day-tasks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.day-tasks-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.day-tasks-empty {
+    padding: 12px 0;
+    color: #777;
+    font-size: 14px;
+}
+
+.day-tasks-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+}
+
+.day-task-item {
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background-color: #f7f9fc;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    border-left: 4px solid transparent;
+}
+
+.day-task-item:hover {
+    transform: translateX(2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Цветные фоны по приоритетам */
+.day-task-item.priority-1 {
+    background-color: #ffe6e6; /* Светло-красный фон для высокого приоритета */
+    border-left-color: #ff4444;
+}
+
+.day-task-item.priority-1:hover {
+    background-color: #ffcccc;
+}
+
+.day-task-item.priority-2 {
+    background-color: #fff4e6; /* Светло-желтый фон для среднего приоритета */
+    border-left-color: #ffaa00;
+}
+
+.day-task-item.priority-2:hover {
+    background-color: #ffe6cc;
+}
+
+.day-task-item.priority-3 {
+    background-color: #e6f7e6; /* Светло-зеленый фон для низкого приоритета */
+    border-left-color: #44aa44;
+}
+
+.day-task-item.priority-3:hover {
+    background-color: #ccffcc;
+}
+
+.day-task-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.day-task-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.day-task-item.priority-1 .day-task-title {
+    color: #cc0000;
+}
+
+.day-task-item.priority-2 .day-task-title {
+    color: #8B8000;
+}
+
+.day-task-item.priority-3 .day-task-title {
+    color: #006600;
+}
+
+.day-task-time {
+    font-size: 12px;
+    color: #555;
+    font-weight: 500;
+}
+
+.day-task-description {
+    font-size: 13px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.day-task-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.delete-task-btn {
+    background: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.delete-task-btn:hover {
+    background: #cc0000;
+}
+
+.day-tasks-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.add-task-btn {
+    width: 100%;
+    padding: 10px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.add-task-btn:hover {
+    background: #45a049;
+}
+
+.day-tasks-empty {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.day-tasks-empty p {
+    margin-bottom: 16px;
+    color: #777;
+}
+
+/* Модальное окно для просмотра полной информации о задаче */
+.task-detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.task-detail-modal {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    width: 500px;
+    max-height: 80vh;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.task-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 12px;
+}
+
+.task-detail-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #333;
+}
+
+.task-detail-content {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.task-detail-section {
+    margin-bottom: 20px;
+}
+
+.task-detail-section h3 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.task-detail-section p {
+    margin: 0;
+    font-size: 15px;
+    color: #333;
+    line-height: 1.5;
+}
+
+.task-detail-footer {
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 1px solid #e0e0e0;
+    text-align: right;
+}
+
+
+
+

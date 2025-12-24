@@ -1,8 +1,10 @@
 .calendar-page {
     flex-grow: 1;
-    padding: 20px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
+    height: 100vh; /* Страница календаря на всю высоту окна */
 }
 
 .main-header {
@@ -38,7 +40,8 @@
     background-color: white;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    padding: 0;
     flex-grow: 1; /* Чтобы календарь занимал все доступное пространство на странице */
     display: flex;
+    overflow: hidden; /* Убираем внутренний скролл, чтобы всё влезало в страницу */
 }

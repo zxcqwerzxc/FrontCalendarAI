@@ -5,31 +5,32 @@
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    padding: 12px;
     flex-grow: 1; /* Чтобы календарь занимал все доступное пространство */
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
 .calendar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    font-size: 1.5em; /* Увеличенный размер шрифта */
+    margin-bottom: 12px;
+    font-size: 1.1em;
 }
 
 .calendar-header button {
     background: none;
     border: none;
-    font-size: 2em; /* Увеличенный размер стрелок */
+    font-size: 1.4em;
     cursor: pointer;
-    padding: 5px 10px;
+    padding: 2px 6px;
 }
 
 .calendar-header select {
-    font-size: 1.2em; /* Увеличенный размер шрифта в выпадающих списках */
-    padding: 5px;
+    font-size: 1em;
+    padding: 4px;
     border-radius: 5px;
     border: 1px solid #ccc;
     margin: 0 5px;
@@ -39,30 +40,33 @@
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     font-weight: bold;
-    margin-bottom: 15px; /* Увеличенный отступ */
+    margin-bottom: 8px;
     text-align: center;
     color: #777;
-    font-size: 1.1em; /* Более крупный шрифт для дней недели */
+    font-size: 0.9em;
 }
 
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 10px; /* Увеличенный отступ между ячейками */
+    grid-auto-rows: 1fr; /* Все строки одинаковой высоты, чтобы поместить календарь по высоте */
+    gap: 4px;
     text-align: center;
     flex-grow: 1; /* Чтобы сетка занимала оставшееся пространство */
 }
 
 .calendar-cell {
-    padding: 15px;
+    padding: 4px;
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.2s;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    min-height: 100px;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 0; /* Не заставляем ячейки быть слишком высокими */
     border: 1px solid #eee;
+    overflow: visible; /* Чтобы индикаторы не обрезались */
 }
 
 .calendar-cell:hover {
@@ -75,9 +79,12 @@
 }
 
 .calendar-cell .day-number {
-    font-size: 2em;
+    font-size: 1.1em;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
+    flex-shrink: 0; /* Номер дня всегда виден */
+    width: 100%;
+    text-align: center;
 }
 
 .calendar-cell.today {
@@ -91,45 +98,47 @@
     font-weight: bold;
 }
 
-.task-list {
-    list-style: none;
-    padding: 0;
-    margin-top: 5px;
-    font-size: 0.9em;
-    color: #666;
-    text-align: left;
+.priority-indicators {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 4px;
     width: 100%;
 }
 
-.task-list li {
-    white-space: normal;
-    word-break: break-word;
-    margin-bottom: 3px;
-    padding: 2px 0;
-    line-height: 1.2;
+.priority-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 0.75em;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.calendar-cell.selected .task-list {
-  color: white;
+.priority-badge:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.task-item {
-    padding: 2px 5px;
-    border-radius: 3px;
-    margin-bottom: 2px;
+.priority-high {
+    background-color: #ff4444; /* Красный фон для высокого приоритета */
 }
 
-.priority-1 {
-    background-color: #ffcccc; /* Красный фон для высокого приоритета */
-    color: #cc0000;
+.priority-medium {
+    background-color: #ffaa00; /* Желтый/оранжевый фон для среднего приоритета */
 }
 
-.priority-2 {
-    background-color: #fffacd; /* Желтый фон для среднего приоритета */
-    color: #8B8000;
+.priority-low {
+    background-color: #44aa44; /* Зеленый фон для низкого приоритета */
 }
 
-.priority-3 {
-    background-color: #ccffcc; /* Зеленый фон для низкого приоритета */
-    color: #006600;
+.calendar-cell.selected .priority-badge {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
 }

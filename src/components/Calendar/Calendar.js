@@ -8,7 +8,7 @@ const months = [
     'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
 ];
 
-const Calendar = ({ refresh }) => { 
+const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => { 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [tasks, setTasks] = useState({}); 
 
@@ -20,6 +20,9 @@ const Calendar = ({ refresh }) => {
 
         fetchTasks(startDate, endDate).then(data => {
             setTasks(data);
+            if (onTasksLoaded) {
+                onTasksLoaded(data);
+            }
         });
     }, [currentDate, refresh]); 
 
@@ -80,8 +83,16 @@ const Calendar = ({ refresh }) => {
         }
 
         for (let day = 1; day <= numDays; day++) {
-            const dateString = new Date(year, month, day).toISOString().slice(0, 10);
+            // Используем локальные компоненты даты, чтобы избежать сдвига из-за часового пояса
+            const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const dayTasks = tasks[dateString] || [];
+
+            // Подсчитываем количество задач по приоритетам
+            const priorityCounts = {
+                high: dayTasks.filter(task => task.priority === 1).length,    // Красный - высокий приоритет
+                medium: dayTasks.filter(task => task.priority === 2).length,  // Желтый - средний приоритет
+                low: dayTasks.filter(task => task.priority === 3).length       // Зеленый - низкий приоритет
+            };
 
             const isToday = day === new Date().getDate() &&
                             month === new Date().getMonth() &&
@@ -98,21 +109,23 @@ const Calendar = ({ refresh }) => {
                 >
                     <span className="day-number">{day}</span> 
                     {dayTasks.length > 0 && (
-                        <ul className="task-list">
-                            {dayTasks.map((task, index) => (
-                                <li 
-                                    key={index} 
-                                    className={`task-item priority-${task.priority}`} 
-                                >
-                                    {task.title} 
-                                    {task.task_date && (
-                                        <span className="task-time">
-                                            {new Date(task.task_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
+                        <div className="priority-indicators">
+                            {priorityCounts.high > 0 && (
+                                <span className="priority-badge priority-high" title={`${priorityCounts.high} задача(и) с высоким приоритетом`}>
+                                    {priorityCounts.high}
+                                </span>
+                            )}
+                            {priorityCounts.medium > 0 && (
+                                <span className="priority-badge priority-medium" title={`${priorityCounts.medium} задача(и) со средним приоритетом`}>
+                                    {priorityCounts.medium}
+                                </span>
+                            )}
+                            {priorityCounts.low > 0 && (
+                                <span className="priority-badge priority-low" title={`${priorityCounts.low} задача(и) с низким приоритетом`}>
+                                    {priorityCounts.low}
+                                </span>
+                            )}
+                        </div>
                     )}
                 </div>
             );
@@ -141,6 +154,16 @@ const Calendar = ({ refresh }) => {
         const newDate = new Date(currentDate);
         newDate.setDate(day);
         setCurrentDate(newDate);
+
+        // Сообщаем наружу выбранную дату (в формате YYYY-MM-DD)
+        // Используем локальные компоненты даты, чтобы избежать сдвига из-за часового пояса
+        if (onDayClick) {
+            const year = newDate.getFullYear();
+            const month = String(newDate.getMonth() + 1).padStart(2, '0');
+            const dayStr = String(newDate.getDate()).padStart(2, '0');
+            const dateString = `${year}-${month}-${dayStr}`;
+            onDayClick(dateString);
+        }
     };
 
     return (

@@ -1,36 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './TaskForm.css';
 
-const TaskForm = ({ isOpen, onClose, onSubmit }) => {
+const TaskForm = ({ isOpen, onClose, onSubmit, selectedDate }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState(false);
-    const [dueDate, setDueDate] = useState('');
-    const [taskDate, setTaskDate] = useState(''); // Новое поле для task_date
-    const [priority, setPriority] = useState(3); 
+    const [dueTime, setDueTime] = useState(''); // Время, до которого актуальна задача (только время, не дата)
+    const [taskDate, setTaskDate] = useState(selectedDate || ''); // Дата, на какой день задача
+    const [priority, setPriority] = useState(3);
+
+    // Обновляем taskDate при изменении selectedDate
+    useEffect(() => {
+        if (selectedDate) {
+            setTaskDate(selectedDate);
+        }
+    }, [selectedDate]);
+
+    // Сбрасываем форму при закрытии
+    useEffect(() => {
+        if (!isOpen) {
+            setTitle('');
+            setDescription('');
+            setStatus(false);
+            setDueTime('');
+            setTaskDate(selectedDate || '');
+            setPriority(3);
+        }
+    }, [isOpen, selectedDate]); 
 
     if (!isOpen) return null;
 
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        const created_at_formatted = new Date().toISOString().slice(0, 19); 
         
         const newTask = {
-            title,
-            description,
-            status,
-            due_date: dueDate, 
-            created_at: created_at_formatted, 
-            priority: parseInt(priority),
-            task_date: taskDate ? `${taskDate}T00:00:00` : null, // Отправляем как 'YYYY-MM-DDTHH:mm:ss', если taskDate есть, иначе null
+            title: title || null,
+            description: description || null,
+            status: status || null,
+            due_time: dueTime || null, // Время в формате HH:mm:ss
+            task_date: taskDate || null, // Дата в формате YYYY-MM-DD
+            priority: priority ? parseInt(priority) : null,
+            // created_at не отправляем - бэкенд сам заполняет
         };
         onSubmit(newTask);
         setTitle('');
         setDescription('');
         setStatus(false);
-        setDueDate('');
-        setTaskDate(''); // Сброс нового поля
+        setDueTime('');
+        setTaskDate('');
         setPriority(3);
     };
 
@@ -66,16 +83,6 @@ const TaskForm = ({ isOpen, onClose, onSubmit }) => {
                         <label htmlFor="status">Выполнено</label>
                     </div>
                     <div className="form-group">
-                        <label htmlFor="dueDate">Срок выполнения (конечная дата и время)</label>
-                        <input
-                            type="datetime-local" 
-                            id="dueDate"
-                            value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                            // required // Срок выполнения может быть необязательным
-                        />
-                    </div>
-                    <div className="form-group">
                         <label htmlFor="taskDate">День для выполнения задания (который на календаре)</label> 
                         <input
                             type="date" 
@@ -83,6 +90,15 @@ const TaskForm = ({ isOpen, onClose, onSubmit }) => {
                             value={taskDate}
                             onChange={(e) => setTaskDate(e.target.value)}
                             required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="dueTime">Время, до которого актуальна задача</label>
+                        <input
+                            type="time" 
+                            id="dueTime"
+                            value={dueTime}
+                            onChange={(e) => setDueTime(e.target.value)}
                         />
                     </div>
                     <div className="form-group">
