@@ -3,7 +3,7 @@ import './CalendarPage.css';
 import Calendar from '../../components/Calendar/Calendar';
 import TaskForm from '../../components/TaskForm/TaskForm'; 
 import DayTasksPopup from '../../components/DayTasksPopup/DayTasksPopup';
-import { createTask, deleteTask } from '../../utils/api'; 
+import { createTask, deleteTask, updateTask } from '../../utils/api'; 
 
 const CalendarPage = () => {
     const [isTaskFormOpen, setIsTaskFormOpen] = useState(false); 
@@ -45,6 +45,17 @@ const CalendarPage = () => {
         setIsTaskFormOpen(true); // Открываем форму
     };
 
+    const handleUpdateTask = async (taskId, updatedData) => {
+        try {
+            await updateTask(taskId, updatedData);
+            setRefreshCalendar(prev => !prev); // Обновляем календарь после обновления задачи
+        } catch (error) {
+            console.error("Ошибка при обновлении задачи:", error);
+            alert('Ошибка при обновлении задачи');
+            throw error; // Пробрасываем ошибку, чтобы форма могла обработать её
+        }
+    };
+
     return (
         <div className="calendar-page">
             <header className="main-header">
@@ -66,6 +77,7 @@ const CalendarPage = () => {
                 onClose={() => setSelectedDate(null)}
                 onAddTask={handleAddTaskFromPopup}
                 onDeleteTask={handleDeleteTask}
+                onUpdateTask={handleUpdateTask}
             />
             <TaskForm 
                 isOpen={isTaskFormOpen} 

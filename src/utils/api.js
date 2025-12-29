@@ -14,6 +14,7 @@ export const fetchTasks = async (startDate, endDate) => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
+    console.log("Raw tasks from API:", data.tasks);
     
     const groupedTasks = {};
     if (data && data.tasks) {
@@ -89,6 +90,36 @@ export const createTask = async (taskData) => {
     return data;
   } catch (error) {
     console.error("Ошибка при создании задачи:", error);
+    throw error;
+  }
+};
+
+export const updateTask = async (taskId, taskData) => {
+  try {
+    // Форматируем данные перед отправкой
+    const formattedData = {
+      title: taskData.title || null,
+      description: taskData.description || null,
+      status: taskData.status || null,
+      due_time: taskData.due_time ? `${taskData.due_time}:00` : null, // Преобразуем HH:mm в HH:mm:ss
+      priority: taskData.priority || null,
+    };
+
+    const response = await fetch(`http://localhost:8000/api/v1/task/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formattedData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Ошибка при обновлении задачи:", error);
     throw error;
   }
 };
