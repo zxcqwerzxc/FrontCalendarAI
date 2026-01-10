@@ -126,18 +126,14 @@ const DayTasksPopup = ({ date, tasks, onClose, onAddTask, onDeleteTask, onTaskDo
             setSelectedTask(task);
             setIsEditing(false);
             // Заполняем форму текущими значениями задачи
-            const formData = {
+            setEditForm({
                 title: task.title || '',
                 description: task.description || '',
                 status: task.status || false,
                 due_time: formatTimeForInput(task.due_time),
                 priority: task.priority || 3,
                 task_date: formatDateForInput(task.task_date)
-            };
-            console.log('handleTaskDoubleClick: Выбранная задача:', task);
-            console.log('handleTaskDoubleClick: Данные формы (после установки):', formData);
-            setEditForm(formData);
-
+            });
         }
     };
 
@@ -153,8 +149,6 @@ const DayTasksPopup = ({ date, tasks, onClose, onAddTask, onDeleteTask, onTaskDo
         };
         console.log('Редактирование задачи:', task);
         console.log('Данные формы:', formData);
-        console.log('handleEditClick: Выбранная задача:', task);
-        console.log('handleEditClick: Данные формы (после установки):', formData);
         setSelectedTask(task);
         setEditForm(formData);
         setIsEditing(true);

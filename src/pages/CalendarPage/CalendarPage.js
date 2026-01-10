@@ -21,12 +21,16 @@ const CalendarPage = () => {
 
     const handleTaskSubmit = async (newTask) => {
         try {
+            console.log('Creating task:', newTask);
             await createTask(newTask);
-            setIsTaskFormOpen(false);
-            setSelectedDate(null); // Закрываем попап после добавления задачи
-            setRefreshCalendar(prev => !prev); 
+            console.log('Task created successfully');
         } catch (error) {
             console.error("Ошибка при создании задачи:", error);
+        } finally {
+            // Всегда закрываем форму после попытки добавления задачи
+            setIsTaskFormOpen(false);
+            setSelectedDate(null);
+            setRefreshCalendar(prev => !prev);
         }
     };
 

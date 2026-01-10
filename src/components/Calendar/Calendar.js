@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Calendar.css';
 import { fetchTasks } from '../../utils/api'; 
+import { useAuth } from '../../context/AuthContext';
 
 const daysOfWeek = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 const months = [
@@ -11,20 +12,39 @@ const months = [
 const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => { 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [tasks, setTasks] = useState({}); 
+    const { user } = useAuth();
 
     useEffect(() => {
+        console.log('Calendar useEffect triggered. User:', user, 'Refresh:', refresh);
+        
+        // Если пользователь не авторизован, не загружаем задачи
+        if (!user) {
+            console.log('User is not authenticated, returning empty tasks');
+            setTasks({});
+            if (onTasksLoaded) {
+                onTasksLoaded({});
+            }
+            return;
+        }
+
+        console.log('Fetching tasks for user ID:', user.id, 'User:', user);
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         const startDate = new Date(year, month, 1);
         const endDate = new Date(year, month + 1, 0); 
+        console.log('Date range:', startDate, 'to', endDate);
 
         fetchTasks(startDate, endDate).then(data => {
+            console.log('Tasks fetched successfully:', data);
+            console.log('Task count:', data ? Object.keys(data).length : 0, 'dates');
             setTasks(data);
             if (onTasksLoaded) {
                 onTasksLoaded(data);
             }
+        }).catch(error => {
+            console.error('Error fetching tasks:', error);
         });
-    }, [currentDate, refresh]); 
+    }, [currentDate, refresh, user]); 
 
     const getDaysInMonth = (year, month) => {
         return new Date(year, month + 1, 0).getDate();
@@ -40,7 +60,7 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
 
         return (
             <div className="calendar-header">
-                 <button onClick={() => changeMonth(-1)}>&lt;</button>
+                 <button onClick={() => changeMonth(-1)}>{'<'}</button>
                 <select
                     value={month}
                     onChange={(e) => changeMonth(0, parseInt(e.target.value))}
@@ -57,7 +77,7 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
                         <option key={y} value={y}>{y}</option>
                     ))}
                 </select>
-                <button onClick={() => changeMonth(1)}>&gt;</button>
+                <button onClick={() => changeMonth(1)}>{'>'}</button>
             </div>
         );
     };
@@ -109,23 +129,28 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
                 >
                     <span className="day-number">{day}</span> 
                     {dayTasks.length > 0 && (
-                        <div className="priority-indicators">
-                            {priorityCounts.high > 0 && (
-                                <span className="priority-badge priority-high" title={`${priorityCounts.high} задача(и) с высоким приоритетом`}>
-                                    {priorityCounts.high}
-                                </span>
-                            )}
-                            {priorityCounts.medium > 0 && (
-                                <span className="priority-badge priority-medium" title={`${priorityCounts.medium} задача(и) со средним приоритетом`}>
-                                    {priorityCounts.medium}
-                                </span>
-                            )}
-                            {priorityCounts.low > 0 && (
-                                <span className="priority-badge priority-low" title={`${priorityCounts.low} задача(и) с низким приоритетом`}>
-                                    {priorityCounts.low}
-                                </span>
-                            )}
-                        </div>
+                        <>
+                            <div className="total-tasks-count" title={`Всего задач: ${dayTasks.length}`}>
+                                {dayTasks.length}
+                            </div>
+                            <div className="priority-indicators">
+                                {priorityCounts.high > 0 && (
+                                    <span className="priority-badge priority-high" title={`${priorityCounts.high} задача(и) с высоким приоритетом`}>
+                                        {priorityCounts.high}
+                                    </span>
+                                )}
+                                {priorityCounts.medium > 0 && (
+                                    <span className="priority-badge priority-medium" title={`${priorityCounts.medium} задача(и) со средним приоритетом`}>
+                                        {priorityCounts.medium}
+                                    </span>
+                                )}
+                                {priorityCounts.low > 0 && (
+                                    <span className="priority-badge priority-low" title={`${priorityCounts.low} задача(и) с низким приоритетом`}>
+                                        {priorityCounts.low}
+                                    </span>
+                                )}
+                            </div>
+                        </>
                     )}
                 </div>
             );

@@ -4,7 +4,8 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    height: 100vh; /* Страница календаря на всю высоту окна */
+    height: 100vh;
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); /* Тот же фон, что и в профиле */
 }
 
 .main-header {
@@ -16,32 +17,87 @@
 
 .main-header h1 {
     margin: 0;
-    font-size: 24px;
+    font-size: 28px;
+    color: white;
+    font-weight: 600;
 }
 
 .add-task-button {
-    background-color: #007bff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
+    padding: 12px 20px;
+    border-radius: 12px;
     cursor: pointer;
     font-size: 16px;
+    font-weight: 500;
     display: flex;
     align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+.add-task-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 .add-task-button .add-icon {
-    font-size: 20px;
-    margin-right: 5px;
+    font-size: 22px;
 }
 
 .calendar-container {
     background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 0;
-    flex-grow: 1; /* Чтобы календарь занимал все доступное пространство на странице */
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    padding: 24px;
+    flex-grow: 1;
     display: flex;
-    overflow: hidden; /* Убираем внутренний скролл, чтобы всё влезало в страницу */
+    overflow: hidden;
+}
+
+/* КЛЮЧЕВЫЕ СТИЛИ — ДЕЛАЕМ ЦИФРЫ ВИДИМЫМИ НА БЕЛОМ ФОНЕ */
+.calendar-container * {
+    color: #333 !important; /* Основной текст дней — тёмный */
+}
+
+.calendar-container .react-calendar__month-view__days__day {
+    color: #333 !important;
+    font-weight: 500;
+}
+
+.calendar-container .react-calendar__month-view__days__day--neighboringMonth {
+    color: #999 !important; /* Дни из соседних месяцев — серые */
+}
+
+.calendar-container .react-calendar__tile--active {
+    background: #007bff !important;
+    color: white !important;
+}
+
+.calendar-container .react-calendar__tile--now {
+    background: #007bff !important;
+    color: white !important;
+    font-weight: bold !important;
+}
+
+.calendar-container .react-calendar__navigation button {
+    color: #333 !important;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.calendar-container .react-calendar__navigation {
+    margin-bottom: 20px;
+}
+
+/* Если используешь другую библиотеку календаря — эти классы можно адаптировать */
+/* Например, для кастомного календаря: */
+.calendar-day-number {
+    color: #333 !important;
+}
+
+.calendar-day-number.disabled {
+    color: #aaa !important;
 }
