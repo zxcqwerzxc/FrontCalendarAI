@@ -227,14 +227,7 @@ const DayTasksPopup = ({ date, tasks, onClose, onAddTask, onDeleteTask, onTaskDo
                     ) : (
                         <>
                             <ul className="day-tasks-list">
-                                {[...tasks]
-                                    // Сортируем задачи по приоритету: сначала высокий (1), потом средний (2), потом низкий (3)
-                                    .sort((a, b) => {
-                                        const priorityA = a.priority || 3; // Если приоритет не указан, считаем низким
-                                        const priorityB = b.priority || 3;
-                                        return priorityA - priorityB; // Сортировка по возрастанию: 1, 2, 3
-                                    })
-                                    .map((task, index) => {
+                                {tasks.map((task, index) => {
                                         // Определяем класс приоритета для фона
                                         const priorityClass = `priority-${task.priority || 3}`;
                                         return (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { fetchUserParams, updateUserParams } from '../../utils/api'; // Добавляем импорты
 import './ProfilePage.css';
 
 const ProfilePage = () => {
@@ -13,6 +14,7 @@ const ProfilePage = () => {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isSavingDescription, setIsSavingDescription] = useState(false); // Новое состояние для кнопки "Сохранить"
   const [activeTab, setActiveTab] = useState('profile');
   const [showLogoutMenu, setShowLogoutMenu] = useState(false);
 
@@ -31,18 +33,35 @@ const ProfilePage = () => {
   }, []);
 
   useEffect(() => {
+    console.log('ProfilePage useEffect triggered. authUser:', authUser); // Логирование authUser
     if (authUser) {
       setUser({
         ...authUser,
         lastActive: 'Только что',
       });
-      setDescription(authUser.description || '');
+      const loadUserParams = async () => {
+        if (!authUser.id) { // Добавлена проверка на authUser.id
+          console.log('authUser.id is not available, skipping fetchUserParams.');
+          setDescription('');
+          return;
+        }
+        try {
+          console.log('Fetching user params for user ID:', authUser.id); // Логирование user ID
+          const params = await fetchUserParams(authUser.id);
+          console.log('Fetched user params:', params); // Логирование полученных параметров
+          setDescription(params || '');
+        } catch (error) {
+          console.error('Ошибка при загрузке описания профиля:', error);
+          setDescription('');
+        }
+      };
+      loadUserParams();
     } else {
-      // Если пользователь не авторизован, перенаправляем на главную
+      console.log('User not authenticated, navigating to /');
       navigate('/');
     }
     setIsLoading(false);
-  }, [authUser, navigate]);
+  }, [authUser, navigate]); // Добавил authUser в массив зависимостей
 
   const handleLogout = () => {
     logout();
@@ -100,12 +119,24 @@ const ProfilePage = () => {
     }
   };
 
-  const handleDescriptionSave = (e) => {
+  const handleDescriptionSave = async (e) => { // Делаем функцию асинхронной
     e.preventDefault();
-    const updatedUser = { ...user, description };
-    setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    setMessage('✅ Описание сохранено');
+    setMessage('');
+    if (!authUser || !authUser.id) {
+      setMessage('❌ Пользователь не авторизован.');
+      return;
+    }
+
+    try {
+      setIsSavingDescription(true); // Устанавливаем состояние загрузки
+      await updateUserParams(authUser.id, description);
+      setMessage('✅ Описание успешно сохранено!');
+    } catch (error) {
+      console.error('Ошибка при сохранении описания:', error);
+      setMessage(`❌ Ошибка при сохранении описания: ${error.message}`);
+    } finally {
+      setIsSavingDescription(false); // Снимаем состояние загрузки
+    }
   };
 
   const getInitials = (login) => {
@@ -282,8 +313,8 @@ const ProfilePage = () => {
                   />
                 </div>
 
-                <button type="submit" className="btn-full">
-                  Сохранить
+                <button type="submit" className="btn-full" disabled={isSavingDescription}>
+                  {isSavingDescription ? 'Сохранение...' : 'Сохранить'}
                 </button>
               </form>
             </div>

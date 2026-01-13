@@ -15,11 +15,8 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
     const { user } = useAuth();
 
     useEffect(() => {
-        console.log('Calendar useEffect triggered. User:', user, 'Refresh:', refresh);
-        
         // Если пользователь не авторизован, не загружаем задачи
         if (!user) {
-            console.log('User is not authenticated, returning empty tasks');
             setTasks({});
             if (onTasksLoaded) {
                 onTasksLoaded({});
@@ -27,16 +24,12 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
             return;
         }
 
-        console.log('Fetching tasks for user ID:', user.id, 'User:', user);
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         const startDate = new Date(year, month, 1);
         const endDate = new Date(year, month + 1, 0); 
-        console.log('Date range:', startDate, 'to', endDate);
 
         fetchTasks(startDate, endDate).then(data => {
-            console.log('Tasks fetched successfully:', data);
-            console.log('Task count:', data ? Object.keys(data).length : 0, 'dates');
             setTasks(data);
             if (onTasksLoaded) {
                 onTasksLoaded(data);
@@ -107,19 +100,30 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
             const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const dayTasks = tasks[dateString] || [];
 
-            // Подсчитываем количество задач по приоритетам
-            const priorityCounts = {
-                high: dayTasks.filter(task => task.priority === 1).length,    // Красный - высокий приоритет
-                medium: dayTasks.filter(task => task.priority === 2).length,  // Желтый - средний приоритет
-                low: dayTasks.filter(task => task.priority === 3).length       // Зеленый - низкий приоритет
-            };
+            const priorityIndicators = [];
+            const highPriorityTasks = dayTasks.filter(task => task.priority === 1);
+            const mediumPriorityTasks = dayTasks.filter(task => task.priority === 2);
+            const lowPriorityTasks = dayTasks.filter(task => task.priority === 3);
+
+            if (highPriorityTasks.length > 0) {
+                priorityIndicators.push({ priority: 1, count: highPriorityTasks.length, earliestTime: Math.min(...highPriorityTasks.map(t => new Date(t.task_time).getTime())) });
+            }
+            if (mediumPriorityTasks.length > 0) {
+                priorityIndicators.push({ priority: 2, count: mediumPriorityTasks.length, earliestTime: Math.min(...mediumPriorityTasks.map(t => new Date(t.task_time).getTime())) });
+            }
+            if (lowPriorityTasks.length > 0) {
+                priorityIndicators.push({ priority: 3, count: lowPriorityTasks.length, earliestTime: Math.min(...lowPriorityTasks.map(t => new Date(t.task_time).getTime())) });
+            }
+
+            // Сортируем индикаторы по самому раннему времени задачи
+            priorityIndicators.sort((a, b) => a.earliestTime - b.earliestTime);
 
             const isToday = day === new Date().getDate() &&
                             month === new Date().getMonth() &&
                             year === new Date().getFullYear();
             const isSelected = day === currentDate.getDate() &&
-                               month === currentDate.getMonth() &&
-                               year === currentDate.getFullYear();
+                                month === currentDate.getMonth() &&
+                                year === currentDate.getFullYear();
             
             cells.push(
                 <div 
@@ -134,21 +138,15 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
                                 {dayTasks.length}
                             </div>
                             <div className="priority-indicators">
-                                {priorityCounts.high > 0 && (
-                                    <span className="priority-badge priority-high" title={`${priorityCounts.high} задача(и) с высоким приоритетом`}>
-                                        {priorityCounts.high}
+                                {priorityIndicators.map((indicator) => (
+                                    <span 
+                                        key={indicator.priority} 
+                                        className={`priority-badge priority-${indicator.priority === 1 ? 'high' : indicator.priority === 2 ? 'medium' : 'low'}`}
+                                        title={`${indicator.count} задача(и) с ${indicator.priority === 1 ? 'высоким' : indicator.priority === 2 ? 'средним' : 'низким'} приоритетом`}
+                                    >
+                                        {indicator.count}
                                     </span>
-                                )}
-                                {priorityCounts.medium > 0 && (
-                                    <span className="priority-badge priority-medium" title={`${priorityCounts.medium} задача(и) со средним приоритетом`}>
-                                        {priorityCounts.medium}
-                                    </span>
-                                )}
-                                {priorityCounts.low > 0 && (
-                                    <span className="priority-badge priority-low" title={`${priorityCounts.low} задача(и) с низким приоритетом`}>
-                                        {priorityCounts.low}
-                                    </span>
-                                )}
+                                ))}
                             </div>
                         </>
                     )}
