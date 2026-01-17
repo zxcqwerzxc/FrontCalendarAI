@@ -1,18 +1,35 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import './ChatPage.css';
+import { useAuth } from '../../context/AuthContext';
+import { getChatHistory, generateChatMessage } from '../../utils/api';
 
 const ChatPage = () => {
-    const [messages, setMessages] = useState([
-        {
-            id: 1,
-            text: "Привет! Я AI-помощник для управления календарем.\nПока я в разработке, но вы можете писать сообщения — скоро я научусь отвечать и помогать с расписанием!",
-            sender: 'ai',
-            timestamp: '10:00',
-        }
-    ]);
-
+    const { user: currentUser } = useAuth();
+    const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false); // Новое состояние для отслеживания генерации
     const messagesEndRef = useRef(null);
+
+    // Загрузка истории чата при первом открытии
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (currentUser && currentUser.id) {
+                try {
+                    const response = await getChatHistory(currentUser.id);
+                    const formattedHistory = response.messages.map(msg => ({
+                        id: Date.now() * Math.random(),
+                        text: msg.content,
+                        sender: msg.role === 'user' ? 'user' : 'ai',
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    }));
+                    setMessages(formattedHistory);
+                } catch (error) {
+                    console.error("Ошибка при загрузке истории чата:", error);
+                }
+            }
+        };
+        fetchHistory();
+    }, [currentUser]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -22,11 +39,10 @@ const ChatPage = () => {
         scrollToBottom();
     }, [messages]);
 
-    const handleSendMessage = (e) => {
+    const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!inputText.trim()) return;
+        if (!inputText.trim() || !currentUser || !currentUser.id) return;
 
-        // Добавляем сообщение пользователя
         const newUserMessage = {
             id: Date.now(),
             text: inputText,
@@ -36,17 +52,29 @@ const ChatPage = () => {
 
         setMessages(prev => [...prev, newUserMessage]);
         setInputText('');
+        setIsGenerating(true);
 
-        // Через секунду добавляем фиксированный ответ от AI
-        setTimeout(() => {
-            const devMessage = {
+        try {
+            const aiResponse = await generateChatMessage(currentUser.id, inputText);
+            const aiMessage = {
                 id: Date.now() + 1,
-                text: "AI-помощник сейчас в разработке.\nСкоро сможет отвечать на ваши запросы о календаре!",
+                text: aiResponse,
                 sender: 'ai',
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             };
-            setMessages(prev => [...prev, devMessage]);
-        }, 800);
+            setMessages(prev => [...prev, aiMessage]);
+        } catch (error) {
+            console.error("Ошибка при генерации сообщения AI:", error);
+            const errorMessage = {
+                id: Date.now() + 1,
+                text: "Произошла ошибка при получении ответа от AI.",
+                sender: 'ai',
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+            setMessages(prev => [...prev, errorMessage]);
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     const handleKeyPress = (e) => {
@@ -89,7 +117,6 @@ const ChatPage = () => {
                                     <span className="message-sender">
                                         {message.sender === 'user' ? 'Вы' : 'AI Помощник'}
                                     </span>
-                                    <span className="message-time">{message.timestamp}</span>
                                 </div>
                                 <div className="message-content">
                                     {message.text.split('\n').map((line, i) => (
@@ -98,6 +125,17 @@ const ChatPage = () => {
                                 </div>
                             </div>
                         ))}
+                        {isGenerating && (
+                            <div className="message ai-message generating-message">
+                                <div className="message-header">
+                                    <span className="message-sender">AI Помощник</span>
+                                    <span className="message-time">...</span>
+                                </div>
+                                <div className="message-content">
+                                    <p>Генерация ответа...</p>
+                                </div>
+                            </div>
+                        )}
                         <div ref={messagesEndRef} />
                     </div>
 

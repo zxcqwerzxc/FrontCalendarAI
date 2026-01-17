@@ -330,3 +330,44 @@ export const updateUserParams = async (userId, description) => {
     throw error;
   }
 };
+
+export const getChatHistory = async (userId) => {
+  try {
+    const response = await fetch(`http://localhost:8000/api/v1/chat/messages?user_id=${userId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Ошибка при получении истории чата:", error);
+    throw error;
+  }
+};
+
+export const generateChatMessage = async (userId, messageContent) => {
+  try {
+    const response = await fetch('http://localhost:8000/api/v1/chat/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user_id: userId, message: messageContent }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Ошибка при генерации сообщения чата:", error);
+    throw error;
+  }
+};
