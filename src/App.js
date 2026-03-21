@@ -11,15 +11,20 @@ import AuthModal from './components/Auth/AuthModal';
 import CalendarPage from './pages/CalendarPage/CalendarPage';
 import ProfilePage from './pages/ProfilePage/ProfilePage';
 import ChatPage from './pages/Chat/ChatPage';
+import StatisticsPopup from './components/StatisticsPopup/StatisticsPopup';
 
 function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showStatisticsModal, setShowStatisticsModal] = useState(false);
 
   return (
     <AuthProvider>
       <Router>
         <div className="App">
-          <Sidebar onProfileClick={() => setShowAuthModal(true)} />
+          <Sidebar
+            onProfileClick={() => setShowAuthModal(true)}
+            onStatisticsClick={() => setShowStatisticsModal(true)}
+          />
           <Routes>
             <Route path="/" element={<CalendarPage />} />
             <Route path="/profile" element={<ProfilePage/>} />
@@ -31,6 +36,10 @@ function App() {
             <AuthModal 
               onClose={() => setShowAuthModal(false)} 
             />
+          )}
+          
+          {showStatisticsModal && (
+            <StatisticsPopup onClose={() => setShowStatisticsModal(false)} />
           )}
         </div>
       </Router>

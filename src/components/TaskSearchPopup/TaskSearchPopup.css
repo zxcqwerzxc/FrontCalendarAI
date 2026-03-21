@@ -1,0 +1,149 @@
+/* TaskSearchPopup.css */
+.task-search-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.task-search-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 620px;
+  max-height: 88vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.task-search-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+}
+
+.task-search-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.task-search-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #777;
+}
+
+.task-search-info {
+  padding: 12px 24px;
+  background: #f0f4f8;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+
+.task-search-count strong {
+  color: #2c7be5;
+}
+
+.task-search-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px 0;
+}
+
+.task-search-item {
+  width: 100%;
+  padding: 14px 24px;
+  border: none;
+  background: none;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.task-search-item:hover {
+  background: #f8fbff;
+}
+
+.task-search-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.task-search-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.task-search-status {
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.task-search-status.done { color: #28a745; }
+.task-search-status.pending { color: #6c757d; }
+
+.task-search-meta {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.task-search-empty {
+  padding: 60px 20px;
+  text-align: center;
+  color: #888;
+  font-size: 1.1rem;
+}
+
+/* Детали задачи */
+.task-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.task-detail-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 520px;
+  padding: 24px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.task-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.task-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+  margin-bottom: 24px;
+}
+
+.task-detail-description p {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}

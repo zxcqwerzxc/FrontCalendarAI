@@ -3,7 +3,7 @@ import './Sidebar.css';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const Sidebar = ({ onProfileClick }) => {
+const Sidebar = ({ onProfileClick, onStatisticsClick }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -14,6 +14,15 @@ const Sidebar = ({ onProfileClick }) => {
                 onProfileClick();
             }
         }
+    };
+
+    const handleStatisticsClick = () => {
+        // Если пользователь не авторизован — показываем модалку входа.
+        if (!user) {
+            if (onProfileClick) onProfileClick();
+            return;
+        }
+        if (onStatisticsClick) onStatisticsClick();
     };
 
     const handleLogout = () => {
@@ -64,15 +73,13 @@ const Sidebar = ({ onProfileClick }) => {
                         </NavLink>
                     </li>
                     <li>
-                        <NavLink
-                            to="/profile"
-                            className={({ isActive }) =>
-                                `nav-button stats-button ${isActive ? 'active' : ''}`
-                            }
-                            onClick={handleProfileClick}
+                        <button
+                            type="button"
+                            className="nav-button stats-button"
+                            onClick={handleStatisticsClick}
                         >
                             📊 Статистика
-                        </NavLink>
+                        </button>
                     </li>
                 </ul>
             </nav>

@@ -1,0 +1,6 @@
+.main-content {
+    flex: 1; /* Позволяет main-content занимать все доступное пространство */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Важно для внутренних элементов с прокруткой */
+}
