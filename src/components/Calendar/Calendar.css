@@ -1,162 +1,350 @@
 .calendar {
     width: 100%;
-    max-width: none; /* Убираем ограничение ширины */
-    margin: 0; /* Убираем центрирование */
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 12px;
-    flex-grow: 1; /* Чтобы календарь занимал все доступное пространство */
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Header */
 .calendar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    font-size: 1.1em;
+    margin-bottom: 24px;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
-.calendar-header button {
-    background: none;
-    border: none;
-    font-size: 1.4em;
-    cursor: pointer;
-    padding: 2px 6px;
-}
-
-.calendar-header select {
-    font-size: 1em;
+.view-toggle {
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.2);
     padding: 4px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    margin: 0 5px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
 }
 
-.days-of-week {
+.view-toggle button {
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+    color: white;
+    opacity: 0.7;
+}
+
+.view-toggle button.active {
+    background: white;
+    color: #667eea;
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 6px 12px;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.nav-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+    color: #667eea;
+    font-weight: bold;
+}
+
+.nav-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.date-selectors {
+    display: flex;
+    gap: 8px;
+}
+
+.date-selectors select {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    background: white;
+    cursor: pointer;
+    color: #333;
+}
+
+.today-btn {
+    padding: 6px 16px;
+    border: none;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.3s;
+    color: #667eea;
+}
+
+.today-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Шапка дней недели */
+.weekdays-header {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    font-weight: bold;
-    margin-bottom: 8px;
     text-align: center;
-    color: #777;
-    font-size: 0.9em;
+    padding: 12px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 16px;
 }
 
+/* Месячный вид */
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    grid-auto-rows: 1fr; /* Все строки одинаковой высоты, чтобы поместить календарь по высоте */
-    gap: 4px;
-    text-align: center;
-    flex-grow: 1; /* Чтобы сетка занимала оставшееся пространство */
+    gap: 8px;
 }
 
 .calendar-cell {
-    padding: 4px;
-    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 12px 4px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s;
+    min-height: 100px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    min-height: 0; /* Не заставляем ячейки быть слишком высокими */
-    border: 1px solid #eee;
-    overflow: visible; /* Чтобы индикаторы не обрезались */
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .calendar-cell:hover {
-    background-color: #eee;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    background: white;
 }
 
 .empty-cell {
-    visibility: hidden;
+    background: transparent;
     border: none;
+    backdrop-filter: none;
+    pointer-events: none;
 }
 
-.calendar-cell .day-number {
-    font-size: 1.1em;
-    font-weight: bold;
-    margin-bottom: 4px;
-    flex-shrink: 0; /* Номер дня всегда виден */
-    width: 100%;
-    text-align: center;
+.day-number {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
 }
 
 .calendar-cell.today {
-    background-color: #e0f7fa;
-    font-weight: bold;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.calendar-cell.today .day-number {
+    color: white;
+}
+
+.calendar-cell.today .total-tasks {
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .calendar-cell.selected {
-    background-color: #007bff;
-    color: white;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: scale(0.98);
+}
+
+.total-tasks {
+    font-size: 18px;
     font-weight: bold;
+    color: #667eea;
+    margin: 4px 0;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 20px;
+    padding: 2px 8px;
+    min-width: 28px;
+    text-align: center;
 }
 
-.priority-indicators {
+.priority-badges {
     display: flex;
-    gap: 4px;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 4px;
-    width: 100%;
+    gap: 6px;
+    margin-top: 6px;
 }
 
-.total-tasks-count {
-    font-size: 1em;
+.badge {
+    min-width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    transition: all 0.2s;
+}
+
+.badge:hover {
+    transform: scale(1.1);
+}
+
+.badge.high {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 2px 6px rgba(245, 87, 108, 0.3);
+}
+
+.badge.medium {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    box-shadow: 0 2px 6px rgba(254, 225, 64, 0.3);
+}
+
+.badge.low {
+    background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+    box-shadow: 0 2px 6px rgba(51, 8, 103, 0.3);
+}
+
+/* Недельный вид */
+.week-view {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.week-cell {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 16px 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.week-cell:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    background: white;
+}
+
+.week-cell.today {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.week-cell.today .week-day-name,
+.week-cell.today .week-day-number,
+.week-cell.today .week-month,
+.week-cell.today .week-total {
+    color: white;
+}
+
+.week-day-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.week-day-number {
+    font-size: 28px;
     font-weight: bold;
     color: #333;
-    margin-bottom: 2px;
-    background-color: #f0f0f0;
-    border-radius: 12px;
-    padding: 2px 6px;
-    min-width: 20px;
-    text-align: center;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    margin: 4px 0;
 }
 
-.calendar-cell.selected .total-tasks-count {
-    background-color: rgba(255, 255, 255, 0.3);
-    color: white;
+.week-month {
+    font-size: 10px;
+    color: #aaa;
+    margin-bottom: 8px;
 }
 
-.priority-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    font-size: 0.75em;
+.week-total {
+    font-size: 16px;
     font-weight: bold;
-    color: white;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    color: #667eea;
+    margin: 8px 0 4px;
 }
 
-.priority-badge:hover {
-    transform: scale(1.1);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+.week-badges {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 4px;
 }
 
-.priority-high {
-    background-color: #ff4444; /* Красный фон для высокого приоритета */
-}
-
-.priority-medium {
-    background-color: #ffaa00; /* Желтый/оранжевый фон для среднего приоритета */
-}
-
-.priority-low {
-    background-color: #44aa44; /* Зеленый фон для низкого приоритета */
-}
-
-.calendar-cell.selected .priority-badge {
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+/* Адаптивность */
+@media (max-width: 768px) {
+    .calendar {
+        padding: 12px;
+    }
+    
+    .calendar-header {
+        flex-direction: column;
+    }
+    
+    .calendar-cell {
+        min-height: 70px;
+        padding: 8px 2px;
+    }
+    
+    .day-number {
+        font-size: 12px;
+    }
+    
+    .total-tasks {
+        font-size: 14px;
+    }
+    
+    .badge {
+        min-width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+    
+    .week-cell {
+        min-height: 100px;
+        padding: 10px 4px;
+    }
+    
+    .week-day-number {
+        font-size: 20px;
+    }
+    
+    .week-total {
+        font-size: 12px;
+    }
 }

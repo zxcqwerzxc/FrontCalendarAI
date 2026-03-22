@@ -13,6 +13,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
+    gap: 16px;
 }
 
 .main-header h1 {
@@ -36,6 +37,57 @@
     gap: 8px;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     transition: all 0.3s ease;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.task-search-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.task-search-input {
+    width: 280px;
+    max-width: 35vw;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #fff;
+    background: rgba(10, 10, 20, 0.35);
+}
+
+.task-search-input::placeholder {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.task-search-input:focus {
+    outline: none;
+    border-color: #8ea2ff;
+    box-shadow: 0 0 0 3px rgba(142, 162, 255, 0.22);
+}
+
+.task-search-button {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #5a79ff 0%, #6f42c1 100%);
+    cursor: pointer;
+}
+
+.task-search-button:hover {
+    transform: translateY(-1px);
 }
 
 .add-task-button:hover {
@@ -100,4 +152,26 @@
 
 .calendar-day-number.disabled {
     color: #aaa !important;
+}
+
+@media (max-width: 980px) {
+    .main-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .task-search-form {
+        width: 100%;
+    }
+
+    .task-search-input {
+        width: 100%;
+        max-width: none;
+    }
 }

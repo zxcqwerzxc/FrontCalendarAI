@@ -1,27 +1,99 @@
+// src/utils/api.js
+
+const BASE_URL = 'http://localhost:8000/api/v1';
+
+// Единая функция для всех запросов с таймаутом и обработкой ошибок
+const apiFetch = async (endpoint, options = {}) => {
+  const url = `${BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+
+  const token = localStorage.getItem('token');
+
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+  };
+
+  if (token) {
+    defaultHeaders.Authorization = `Bearer ${token}`;
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...defaultHeaders,
+        ...options.headers,
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorMessage = response.statusText;
+      try {
+        const errData = await response.json();
+        errorMessage = errData.message || errorMessage;
+      } catch {}
+      throw new Error(`Ошибка ${response.status}: ${errorMessage}`);
+    }
+
+    if (response.status === 204) {
+      return true;
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('text/plain')) {
+      return response.text();
+    }
+
+    return response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Запрос превысил время ожидания (15 сек)');
+    }
+    console.error(`Ошибка API (${url}):`, error);
+    throw error;
+  }
+};
+
+// ────────────────────────────────────────────────
+
 export const getCurrentUser = () => {
   try {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       return JSON.parse(storedUser);
     }
-  } catch {
+    return null;
+  } catch (error) {
+    console.error('Ошибка при получении текущего пользователя:', error);
     return null;
   }
-  return null;
+};
+
+// ────────────────────────────────────────────────
+
+const dateFormatter = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 export const fetchTasks = async (startDate, endDate) => {
   const user = getCurrentUser();
   
-  // Если пользователь не авторизован, не загружаем задачи
   if (!user || !user.id) {
-    console.log('No user authenticated or user ID missing, returning empty tasks');
+    console.log('❌ Нет авторизованного пользователя');
     return {};
   }
-  
-  const dateFormatter = (date) => {
-    return date.toISOString().split('T')[0];
-  };
 
   const params = new URLSearchParams({
     date_from: dateFormatter(startDate),
@@ -30,180 +102,169 @@ export const fetchTasks = async (startDate, endDate) => {
   }).toString();
 
   try {
-    const url = `http://localhost:8000/api/v1/tasks?${params}`;
-    console.log('Fetching tasks for user:', user.id, 'URL:', url);
+    const url = `/task?${params}`;
+    console.log('🔍 Запрос задач для пользователя:', user.id);
     
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await apiFetch(url);
+    console.log('📦 Полученные данные:', data);
+    
+    if (!data) {
+      console.log('⚠️ Нет данных');
+      return {};
     }
-    const data = await response.json();
+    
+    let tasksArray = [];
+    if (data.tasks && Array.isArray(data.tasks)) {
+      tasksArray = data.tasks;
+    } else if (Array.isArray(data)) {
+      tasksArray = data;
+    } else {
+      console.log('⚠️ Неизвестный формат:', data);
+      return {};
+    }
+    
+    console.log('📋 Всего задач:', tasksArray.length);
     
     const groupedTasks = {};
-    if (data && data.tasks) {
-      data.tasks.forEach(task => {
-        // Фильтруем задачи по пользователю - пропускаем задачи других пользователей и задачи без user_id
-        // if (!task.user_id) {
-        //   console.log(`Task ${task.id} has no user_id, skipping`);
-        //   return; // Пропускаем задачи без user_id
-        // }
-        if (task.user_id && task.user_id !== user.id) { // Оставляем проверку для других пользователей, если user_id есть
-          console.log(`Skipping task ${task.id} - belongs to user ${task.user_id}, current user ${user.id}`);
-          return; // Пропускаем задачи других пользователей
+    
+    tasksArray.forEach(task => {
+      let taskDate = null;
+      
+      if (task.task_date) {
+        if (typeof task.task_date === 'string') {
+          taskDate = task.task_date.split('T')[0];
+        } else if (task.task_date instanceof Date) {
+          taskDate = dateFormatter(task.task_date);
         }
-        
-        let taskDate = 'no_date';
-        if (task.task_time) { // Предпочитаем task_time, если доступен
-            taskDate = task.task_time.slice(0, 10); // Извлекаем YYYY-MM-DD из task_time
-        } else if (task.task_date) {
-            // Если task_date уже в формате YYYY-MM-DD, используем его напрямую
-            if (typeof task.task_date === 'string' && task.task_date.match(/^\d{4}-\d{2}-\d{2}/)) {
-                taskDate = task.task_date.slice(0, 10);
-            } else {
-                // Иначе парсим дату в формате DD.MM.YYYY и берем только дату без времени
-                const parts = task.task_date.split('.');
-                if (parts.length === 3) {
-                    const date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    taskDate = `${year}-${month}-${day}`;
-                } else {
-                    console.warn(`Неизвестный формат даты для задачи ${task.id}: ${task.task_date}. Попытка стандартного парсинга.`);
-                    const date = new Date(task.task_date);
-                    if (!isNaN(date.getTime())) {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        taskDate = `${year}-${month}-${day}`;
-                    } else {
-                        console.error(`Не удалось распарсить дату для задачи ${task.id}: ${task.task_date}`);
-                        taskDate = 'invalid_date'; 
-                    }
-                }
-            }
-        }
-
-        if (!groupedTasks[taskDate]) {
-          groupedTasks[taskDate] = [];
-        }
-        groupedTasks[taskDate].push(task);
-      });
-
-      for (const date in groupedTasks) {
-        groupedTasks[date].sort((a, b) => {
-          // Сортировка по task_time (хронологически)
-          const timeA = new Date(a.task_time);
-          const timeB = new Date(b.task_time);
-          return timeA.getTime() - timeB.getTime();
-        });
       }
-    }
+      
+      if (!taskDate) {
+        console.log(`⚠️ У задачи ${task.id} нет даты, пропускаем`);
+        return;
+      }
+      
+      console.log(`📌 Задача ${task.id}: "${task.title}" на ${taskDate}`);
+      
+      if (!groupedTasks[taskDate]) {
+        groupedTasks[taskDate] = [];
+      }
+      
+      groupedTasks[taskDate].push({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        due_time: task.due_time,
+        priority: task.priority,
+        task_date: taskDate
+      });
+    });
+    
+    console.log('✅ Сгруппировано по датам:', Object.keys(groupedTasks));
+    
     return groupedTasks;
-
+    
   } catch (error) {
-    console.error("Ошибка при получении задач:", error);
+    console.error("❌ Ошибка при получении задач:", error);
     return {};
   }
 };
+
+// ────────────────────────────────────────────────
 
 export const createTask = async (taskData) => {
   try {
     const user = getCurrentUser();
     
+    if (!user || !user.id) {
+      throw new Error("Нет авторизованного пользователя");
+    }
+
     const formattedData = {
       title: taskData.title || null,
       description: taskData.description || null,
-      status: taskData.status || null,
-      due_time: taskData.due_time ? `${taskData.due_time}:00` : null,
+      status: taskData.status ?? false,
+      due_time: taskData.due_time || null,
       task_date: taskData.task_date || null, 
       priority: taskData.priority || null,
+      user_id: user.id,
     };
 
-    if (user && user.id) {
-      formattedData.user_id = user.id;
-    }
+    console.log('[createTask] Отправляем:', formattedData);
 
-    const response = await fetch('http://localhost:8000/api/v1/task', {
+    const response = await apiFetch('/task', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(formattedData),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-    }
-    const data = await response.json();
-    return data;
+    
+    console.log('[createTask] Ответ:', response);
+    return response;
   } catch (error) {
     console.error("Ошибка при создании задачи:", error);
     throw error;
   }
 };
 
+// ────────────────────────────────────────────────
+
 export const updateTask = async (taskId, taskData) => {
   try {
-    const formattedData = {
-      title: taskData.title || null,
-      description: taskData.description || null,
-      status: taskData.status || null,
-      due_time: taskData.due_time ? `${taskData.due_time}:00` : null,
-      priority: taskData.priority || null,
-    };
+    const formattedData = {};
+    
+    if (taskData.title !== undefined) {
+      formattedData.title = taskData.title;
+    }
+    if (taskData.description !== undefined) {
+      formattedData.description = taskData.description;
+    }
+    if (taskData.status !== undefined) {
+      formattedData.status = taskData.status;
+    }
+    if (taskData.due_time !== undefined && taskData.due_time !== null && taskData.due_time !== '') {
+      let timeStr = taskData.due_time;
+      if (typeof timeStr === 'string' && timeStr.includes(':')) {
+        const [hours, minutes] = timeStr.split(':');
+        formattedData.due_time = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00`;
+      } else {
+        formattedData.due_time = null;
+      }
+    } else {
+      formattedData.due_time = null;
+    }
+    if (taskData.priority !== undefined) {
+      formattedData.priority = taskData.priority;
+    }
 
-    const response = await fetch(`http://localhost:8000/api/v1/task/${taskId}`, {
+    console.log(`[updateTask #${taskId}] Отправляем:`, formattedData);
+
+    return await apiFetch(`/task/${taskId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(formattedData),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-    }
-    const data = await response.json();
-    return data;
   } catch (error) {
     console.error("Ошибка при обновлении задачи:", error);
     throw error;
   }
 };
 
+// ────────────────────────────────────────────────
+
 export const getTaskById = async (taskId) => {
   try {
-    const response = await fetch(`http://localhost:8000/api/v1/task/${taskId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-    }
-    const data = await response.json();
-    return data;
+    return await apiFetch(`/task/${taskId}`);
   } catch (error) {
     console.error("Ошибка при получении задачи:", error);
     throw error;
   }
 };
 
+// ────────────────────────────────────────────────
+
 export const deleteTask = async (taskId) => {
   try {
-    const response = await fetch(`http://localhost:8000/api/v1/task/${taskId}`, {
+    await apiFetch(`/task/${taskId}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-    }
     return true;
   } catch (error) {
     console.error("Ошибка при удалении задачи:", error);
@@ -211,100 +272,120 @@ export const deleteTask = async (taskId) => {
   }
 };
 
-export const createUser = async (userData) => {
-    try {
-                const response = await fetch('http://localhost:8000/api/v1/user', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Ошибка при создании пользователя:", error);
-        throw error;
+// ────────────────────────────────────────────────
+
+export const searchTasksByTitle = async (query, limit = 10) => {
+  try {
+    const user = getCurrentUser();
+    if (!user || !user.id) {
+      return [];
     }
+
+    const normalizedQuery = String(query || '').trim();
+    if (!normalizedQuery) return [];
+
+    const params = new URLSearchParams({
+      user_id: String(user.id),
+      query: normalizedQuery,
+      limit: String(Math.min(Math.max(1, limit), 100)),
+    }).toString();
+
+    const data = await apiFetch(`/task/search/?${params}`);
+    return Array.isArray(data) ? data : (data?.tasks || []);
+  } catch (error) {
+    console.error("Ошибка при поиске задач:", error);
+    return [];
+  }
 };
 
-export const loginUser = async (userData) => {
-    try {
-        const encodedLogin = encodeURIComponent(userData.login);
-        const encodedPassword = encodeURIComponent(userData.password);
+// ────────────────────────────────────────────────
 
-        const response = await fetch(
-            `http://localhost:8000/api/v1/user/user/auth?login=${encodedLogin}&password=${encodedPassword}`,
-            {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-            }
-        );
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Ошибка при входе в систему:", error);
-        throw error;
+export const createUser = async (userData) => {
+  try {
+    return await apiFetch('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  } catch (error) {
+    console.error("Ошибка при создании пользователя:", error);
+    throw error;
+  }
+};
+
+// ────────────────────────────────────────────────
+
+export const loginUser = async (userData) => {
+  try {
+    const encodedLogin = encodeURIComponent(userData.login);
+    const encodedPassword = encodeURIComponent(String(userData.password));
+
+    const data = await apiFetch(
+      `/users/user/auth?login=${encodedLogin}&password=${encodedPassword}`
+    );
+
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+    }
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Ошибка при входе в систему:", error);
+    throw error;
+  }
+};
+
+// ────────────────────────────────────────────────
+
+export const getUserById = async (userId) => {
+  try {
+    return await apiFetch(`/users/${userId}`);
+  } catch (error) {
+    console.error("Ошибка при получении пользователя:", error);
+    throw error;
   }
 };
 
 export const updateUser = async (userId, userData) => {
-    try {
-        const response = await fetch(`http://localhost:8000/api/v1/user/${userId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-        }
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Ошибка при обновлении пользователя:", error);
-        throw error;
-    }
+  try {
+    return await apiFetch(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  } catch (error) {
+    console.error("Ошибка при обновлении пользователя:", error);
+    throw error;
+  }
 };
 
-// New API functions for user parameters (About Me section)
+export const deleteUser = async (userId) => {
+  try {
+    await apiFetch(`/users/${userId}`, {
+      method: 'DELETE',
+    });
+    return true;
+  } catch (error) {
+    console.error("Ошибка при удалении пользователя:", error);
+    throw error;
+  }
+};
+
+// ────────────────────────────────────────────────
+
 export const fetchUserParams = async (userId) => {
   try {
-    const response = await fetch(`http://localhost:8000/api/v1/params?user_id=${userId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!response.ok) {
-      // Если ответ не OK, проверяем статус. Если 404 (не найдено), возвращаем пустую строку.
-      // Это означает, что пользователь еще не сохранял описание.
-      if (response.status === 404) {
-        return null; 
-      }
-      const errorData = await response.json();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-    }
-    let data = await response.text(); // Бэкенд возвращает строку напрямую
-    // Удаляем кавычки из строки, если они есть
-    if (data.startsWith('"') && data.endsWith('"')) {
+    let data = await apiFetch(`/params?user_id=${userId}`);
+    
+    if (typeof data === 'string' && data.startsWith('"') && data.endsWith('"')) {
       data = data.slice(1, -1);
     }
     return data;
   } catch (error) {
+    if (error.message.includes('404')) {
+      return null;
+    }
     console.error("Ошибка при получении параметров пользователя:", error);
     return null;
   }
@@ -312,39 +393,23 @@ export const fetchUserParams = async (userId) => {
 
 export const updateUserParams = async (userId, description) => {
   try {
-    const response = await fetch('http://localhost:8000/api/v1/params', {
+    return await apiFetch('/params', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ user_id: userId, description: description }), // Изменено с param_value на description
+      body: JSON.stringify({ user_id: userId, description }),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-    }
-    const data = await response.json();
-    return data;
   } catch (error) {
     console.error("Ошибка при обновлении параметров пользователя:", error);
     throw error;
   }
 };
 
+// ────────────────────────────────────────────────
+
 export const getChatHistory = async (userId) => {
   try {
-    const response = await fetch(`http://localhost:8000/api/v1/chat/messages?user_id=${userId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    return await apiFetch(`/chat/messages?user_id=${userId}`, {
+      method: 'GET',
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-    }
-    const data = await response.json();
-    return data;
   } catch (error) {
     console.error("Ошибка при получении истории чата:", error);
     throw error;
@@ -353,19 +418,10 @@ export const getChatHistory = async (userId) => {
 
 export const generateChatMessage = async (userId, messageContent) => {
   try {
-    const response = await fetch('http://localhost:8000/api/v1/chat/generate', {
+    return await apiFetch('/chat/generate', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ user_id: userId, message: messageContent }),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message || response.statusText}`);
-    }
-    const data = await response.json();
-    return data;
   } catch (error) {
     console.error("Ошибка при генерации сообщения чата:", error);
     throw error;

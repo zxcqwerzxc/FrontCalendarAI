@@ -16,6 +16,15 @@ const Sidebar = ({ onProfileClick }) => {
         }
     };
 
+    const handleStatisticsClick = (e) => {
+        if (!user) {
+            e.preventDefault();
+            if (onProfileClick) {
+                onProfileClick();
+            }
+        }
+    };
+
     const handleLogout = () => {
         logout();
         navigate('/'); // Редирект на календарь после выхода
@@ -65,11 +74,11 @@ const Sidebar = ({ onProfileClick }) => {
                     </li>
                     <li>
                         <NavLink
-                            to="/profile"
+                            to="/statistic"
                             className={({ isActive }) =>
-                                `nav-button stats-button ${isActive ? 'active' : ''}`
+                                `nav-button ${isActive ? 'active' : ''}`
                             }
-                            onClick={handleProfileClick}
+                            onClick={handleStatisticsClick}
                         >
                             📊 Статистика
                         </NavLink>

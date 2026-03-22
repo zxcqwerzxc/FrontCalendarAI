@@ -11,33 +11,29 @@ const months = [
 
 const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => { 
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [tasks, setTasks] = useState({}); 
+    const [tasks, setTasks] = useState({});
+    const [viewMode, setViewMode] = useState('month');
     const { user } = useAuth();
 
     useEffect(() => {
-        // Если пользователь не авторизован, не загружаем задачи
         if (!user) {
             setTasks({});
-            if (onTasksLoaded) {
-                onTasksLoaded({});
-            }
+            if (onTasksLoaded) onTasksLoaded({});
             return;
         }
 
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         const startDate = new Date(year, month, 1);
-        const endDate = new Date(year, month + 1, 0); 
+        const endDate = new Date(year, month + 1, 0);
 
         fetchTasks(startDate, endDate).then(data => {
             setTasks(data);
-            if (onTasksLoaded) {
-                onTasksLoaded(data);
-            }
+            if (onTasksLoaded) onTasksLoaded(data);
         }).catch(error => {
             console.error('Error fetching tasks:', error);
         });
-    }, [currentDate, refresh, user]); 
+    }, [currentDate, refresh, user, onTasksLoaded]);
 
     const getDaysInMonth = (year, month) => {
         return new Date(year, month + 1, 0).getDate();
@@ -53,37 +49,66 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
 
         return (
             <div className="calendar-header">
-                 <button onClick={() => changeMonth(-1)}>{'<'}</button>
-                <select
-                    value={month}
-                    onChange={(e) => changeMonth(0, parseInt(e.target.value))}
-                >
-                    {months.map((m, index) => (
-                        <option key={m} value={index}>{m}</option>
-                    ))}
-                </select>
-                <select
-                    value={year}
-                    onChange={(e) => changeYear(parseInt(e.target.value))}
-                >
-                    {Array.from({ length: 10 }, (_, i) => year - 5 + i).map((y) => (
-                        <option key={y} value={y}>{y}</option>
-                    ))}
-                </select>
-                <button onClick={() => changeMonth(1)}>{'>'}</button>
+                <div className="view-toggle">
+                    <button 
+                        className={viewMode === 'month' ? 'active' : ''} 
+                        onClick={() => setViewMode('month')}
+                    >
+                        📅 Месяц
+                    </button>
+                    <button 
+                        className={viewMode === 'week' ? 'active' : ''} 
+                        onClick={() => setViewMode('week')}
+                    >
+                        📆 Неделя
+                    </button>
+                </div>
+                
+                <div className="nav-controls">
+                    <button onClick={() => changeMonth(-1)} className="nav-btn">←</button>
+                    <div className="date-selectors">
+                        <select value={month} onChange={(e) => setCurrentDate(new Date(year, parseInt(e.target.value), 1))}>
+                            {months.map((m, idx) => (
+                                <option key={idx} value={idx}>{m}</option>
+                            ))}
+                        </select>
+                        <select value={year} onChange={(e) => setCurrentDate(new Date(parseInt(e.target.value), month, 1))}>
+                            {Array.from({ length: 7 }, (_, i) => year - 3 + i).map(y => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <button onClick={() => changeMonth(1)} className="nav-btn">→</button>
+                    <button onClick={goToToday} className="today-btn">Сегодня</button>
+                </div>
             </div>
         );
     };
 
-    const renderDaysOfWeek = () => {
-        return (
-            <div className="days-of-week">
-                {daysOfWeek.map(day => <div key={day}>{day}</div>)}
-            </div>
-        );
+    const changeMonth = (offset) => {
+        const newDate = new Date(currentDate);
+        newDate.setMonth(newDate.getMonth() + offset);
+        setCurrentDate(newDate);
     };
 
-    const renderCells = () => {
+    const goToToday = () => {
+        setCurrentDate(new Date());
+    };
+
+    const selectDate = (day) => {
+        const newDate = new Date(currentDate);
+        newDate.setDate(day);
+        setCurrentDate(newDate);
+        
+        if (onDayClick) {
+            const year = newDate.getFullYear();
+            const month = String(newDate.getMonth() + 1).padStart(2, '0');
+            const dayStr = String(newDate.getDate()).padStart(2, '0');
+            onDayClick(`${year}-${month}-${dayStr}`);
+        }
+    };
+
+    const renderMonthView = () => {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         const numDays = getDaysInMonth(year, month);
@@ -96,34 +121,16 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
         }
 
         for (let day = 1; day <= numDays; day++) {
-            // Используем локальные компоненты даты, чтобы избежать сдвига из-за часового пояса
             const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const dayTasks = tasks[dateString] || [];
+            
+            const highPriority = dayTasks.filter(t => t.priority === 1).length;
+            const mediumPriority = dayTasks.filter(t => t.priority === 2).length;
+            const lowPriority = dayTasks.filter(t => t.priority === 3 || !t.priority).length;
+            const totalTasks = dayTasks.length;
 
-            const priorityIndicators = [];
-            const highPriorityTasks = dayTasks.filter(task => task.priority === 1);
-            const mediumPriorityTasks = dayTasks.filter(task => task.priority === 2);
-            const lowPriorityTasks = dayTasks.filter(task => task.priority === 3);
-
-            if (highPriorityTasks.length > 0) {
-                priorityIndicators.push({ priority: 1, count: highPriorityTasks.length, earliestTime: Math.min(...highPriorityTasks.map(t => new Date(t.task_time).getTime())) });
-            }
-            if (mediumPriorityTasks.length > 0) {
-                priorityIndicators.push({ priority: 2, count: mediumPriorityTasks.length, earliestTime: Math.min(...mediumPriorityTasks.map(t => new Date(t.task_time).getTime())) });
-            }
-            if (lowPriorityTasks.length > 0) {
-                priorityIndicators.push({ priority: 3, count: lowPriorityTasks.length, earliestTime: Math.min(...lowPriorityTasks.map(t => new Date(t.task_time).getTime())) });
-            }
-
-            // Сортируем индикаторы по самому раннему времени задачи
-            priorityIndicators.sort((a, b) => a.earliestTime - b.earliestTime);
-
-            const isToday = day === new Date().getDate() &&
-                            month === new Date().getMonth() &&
-                            year === new Date().getFullYear();
-            const isSelected = day === currentDate.getDate() &&
-                                month === currentDate.getMonth() &&
-                                year === currentDate.getFullYear();
+            const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear();
+            const isSelected = day === currentDate.getDate() && month === currentDate.getMonth() && year === currentDate.getFullYear();
             
             cells.push(
                 <div 
@@ -131,22 +138,28 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
                     className={`calendar-cell ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
                     onClick={() => selectDate(day)}
                 >
-                    <span className="day-number">{day}</span> 
-                    {dayTasks.length > 0 && (
+                    <span className="day-number">{day}</span>
+                    {totalTasks > 0 && (
                         <>
-                            <div className="total-tasks-count" title={`Всего задач: ${dayTasks.length}`}>
-                                {dayTasks.length}
+                            <div className="total-tasks" title={`Всего задач: ${totalTasks}`}>
+                                {totalTasks}
                             </div>
-                            <div className="priority-indicators">
-                                {priorityIndicators.map((indicator) => (
-                                    <span 
-                                        key={indicator.priority} 
-                                        className={`priority-badge priority-${indicator.priority === 1 ? 'high' : indicator.priority === 2 ? 'medium' : 'low'}`}
-                                        title={`${indicator.count} задача(и) с ${indicator.priority === 1 ? 'высоким' : indicator.priority === 2 ? 'средним' : 'низким'} приоритетом`}
-                                    >
-                                        {indicator.count}
+                            <div className="priority-badges">
+                                {highPriority > 0 && (
+                                    <span className="badge high" title={`Высокий: ${highPriority}`}>
+                                        {highPriority}
                                     </span>
-                                ))}
+                                )}
+                                {mediumPriority > 0 && (
+                                    <span className="badge medium" title={`Средний: ${mediumPriority}`}>
+                                        {mediumPriority}
+                                    </span>
+                                )}
+                                {lowPriority > 0 && (
+                                    <span className="badge low" title={`Низкий: ${lowPriority}`}>
+                                        {lowPriority}
+                                    </span>
+                                )}
                             </div>
                         </>
                     )}
@@ -157,43 +170,79 @@ const Calendar = ({ refresh, onDayClick, onTasksLoaded }) => {
         return <div className="calendar-grid">{cells}</div>;
     };
 
-    const changeMonth = (offset, newMonth = null) => {
-        const newDate = new Date(currentDate);
-        if (newMonth !== null) {
-            newDate.setMonth(newMonth);
-        } else {
-            newDate.setMonth(newDate.getMonth() + offset);
-        }
-        setCurrentDate(newDate);
-    };
+    const renderWeekView = () => {
+        const getWeekStart = (date) => {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDay() === 0 ? 6 : day - 1;
+            d.setDate(d.getDate() - diff);
+            return d;
+        };
 
-    const changeYear = (newYear) => {
-        const newDate = new Date(currentDate);
-        newDate.setFullYear(newYear);
-        setCurrentDate(newDate);
-    };
+        const getWeekDays = () => {
+            const weekStart = getWeekStart(currentDate);
+            const days = [];
+            for (let i = 0; i < 7; i++) {
+                const day = new Date(weekStart);
+                day.setDate(weekStart.getDate() + i);
+                days.push(day);
+            }
+            return days;
+        };
 
-    const selectDate = (day) => {
-        const newDate = new Date(currentDate);
-        newDate.setDate(day);
-        setCurrentDate(newDate);
-
-        // Сообщаем наружу выбранную дату (в формате YYYY-MM-DD)
-        // Используем локальные компоненты даты, чтобы избежать сдвига из-за часового пояса
-        if (onDayClick) {
-            const year = newDate.getFullYear();
-            const month = String(newDate.getMonth() + 1).padStart(2, '0');
-            const dayStr = String(newDate.getDate()).padStart(2, '0');
-            const dateString = `${year}-${month}-${dayStr}`;
-            onDayClick(dateString);
-        }
+        const weekDays = getWeekDays();
+        
+        return (
+            <div className="week-view">
+                {weekDays.map((day, index) => {
+                    const year = day.getFullYear();
+                    const month = day.getMonth();
+                    const dayNum = day.getDate();
+                    const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+                    const dayTasks = tasks[dateString] || [];
+                    
+                    const highPriority = dayTasks.filter(t => t.priority === 1).length;
+                    const mediumPriority = dayTasks.filter(t => t.priority === 2).length;
+                    const lowPriority = dayTasks.filter(t => t.priority === 3 || !t.priority).length;
+                    const totalTasks = dayTasks.length;
+                    
+                    const isToday = dateString === new Date().toISOString().split('T')[0];
+                    
+                    return (
+                        <div 
+                            key={index} 
+                            className={`week-cell ${isToday ? 'today' : ''}`}
+                            onClick={() => {
+                                if (onDayClick) onDayClick(dateString);
+                            }}
+                        >
+                            <div className="week-day-name">{daysOfWeek[index]}</div>
+                            <div className="week-day-number">{dayNum}</div>
+                            <div className="week-month">{months[month]}</div>
+                            {totalTasks > 0 && (
+                                <>
+                                    <div className="week-total">{totalTasks}</div>
+                                    <div className="week-badges">
+                                        {highPriority > 0 && <span className="badge high">{highPriority}</span>}
+                                        {mediumPriority > 0 && <span className="badge medium">{mediumPriority}</span>}
+                                        {lowPriority > 0 && <span className="badge low">{lowPriority}</span>}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        );
     };
 
     return (
         <div className="calendar">
             {renderHeader()}
-            {renderDaysOfWeek()}
-            {renderCells()}
+            <div className="weekdays-header">
+                {daysOfWeek.map(day => <div key={day}>{day}</div>)}
+            </div>
+            {viewMode === 'month' ? renderMonthView() : renderWeekView()}
         </div>
     );
 };

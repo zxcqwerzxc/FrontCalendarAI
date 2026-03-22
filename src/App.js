@@ -11,6 +11,7 @@ import AuthModal from './components/Auth/AuthModal';
 import CalendarPage from './pages/CalendarPage/CalendarPage';
 import ProfilePage from './pages/ProfilePage/ProfilePage';
 import ChatPage from './pages/Chat/ChatPage';
+import StatisticsPage from './pages/StatisticsPage/StatisticsPage';
 
 function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -19,17 +20,20 @@ function App() {
     <AuthProvider>
       <Router>
         <div className="App">
-          <Sidebar onProfileClick={() => setShowAuthModal(true)} />
+          <Sidebar
+            onProfileClick={() => setShowAuthModal(true)}
+          />
           <Routes>
             <Route path="/" element={<CalendarPage />} />
             <Route path="/profile" element={<ProfilePage/>} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/statistic" element={<StatisticsPage />} />
           </Routes>
           
           {/* Модальное окно авторизации */}
           {showAuthModal && (
-            <AuthModal 
-              onClose={() => setShowAuthModal(false)} 
+            <AuthModal
+              onClose={() => setShowAuthModal(false)}
             />
           )}
         </div>
