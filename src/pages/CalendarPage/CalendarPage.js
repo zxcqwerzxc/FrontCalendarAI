@@ -16,8 +16,26 @@ const CalendarPage = () => {
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     const [isSearchPopupOpen, setIsSearchPopupOpen] = useState(false);
 
+    const formatDateToString = (date) => {
+        if (!date) return null;
+        if (typeof date === 'string') return date;
+        if (date instanceof Date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        return null;
+    };
+
+    const handleDayClick = (date) => {
+        const dateStr = formatDateToString(date);
+        console.log('📅 Выбрана дата:', dateStr);
+        setSelectedDate(dateStr);
+    };
+
     const handleAddTaskClick = () => {
-        setSelectedDate(null); // Сбрасываем дату
+        setSelectedDate(null);
         setIsTaskFormOpen(true);
     };
 
@@ -28,25 +46,21 @@ const CalendarPage = () => {
     const handleTaskSubmit = async (newTask, taskId) => {
         try {
             if (taskId) {
-                // Обновление задачи
-                console.log('Updating task:', taskId, newTask);
+                console.log('🔄 Обновление задачи:', taskId, newTask);
                 await updateTask(taskId, newTask);
-                console.log('Task updated successfully');
+                console.log('✅ Задача обновлена');
             } else {
-                // Создание новой задачи
-                console.log('Creating task:', newTask);
+                console.log('➕ Создание задачи:', newTask);
                 await createTask(newTask);
-                console.log('Task created successfully');
+                console.log('✅ Задача создана');
             }
             
-            // Обновляем календарь
             setRefreshCalendar(prev => !prev);
             
         } catch (error) {
-            console.error("Ошибка при сохранении задачи:", error);
+            console.error("❌ Ошибка при сохранении задачи:", error);
             alert('Не удалось сохранить задачу');
         } finally {
-            // Закрываем форму
             setIsTaskFormOpen(false);
             setSelectedDate(null);
         }
@@ -55,15 +69,17 @@ const CalendarPage = () => {
     const handleDeleteTask = async (taskId) => {
         try {
             await deleteTask(taskId);
-            setRefreshCalendar(prev => !prev); // Обновляем календарь после удаления
+            setRefreshCalendar(prev => !prev);
         } catch (error) {
-            console.error("Ошибка при удалении задачи:", error);
+            console.error("❌ Ошибка при удалении задачи:", error);
             alert('Ошибка при удалении задачи');
         }
     };
 
     const handleAddTaskFromPopup = (date) => {
-        setSelectedDate(date);
+        const dateStr = formatDateToString(date);
+        console.log('📝 Добавление задачи для даты:', dateStr);
+        setSelectedDate(dateStr);
         setIsTaskFormOpen(true);
     };
 
@@ -72,7 +88,7 @@ const CalendarPage = () => {
             await updateTask(taskId, updatedData);
             setRefreshCalendar(prev => !prev);
         } catch (error) {
-            console.error("Ошибка при обновлении задачи:", error);
+            console.error("❌ Ошибка при обновлении задачи:", error);
             alert('Ошибка при обновлении задачи');
             throw error;
         }
@@ -93,7 +109,7 @@ const CalendarPage = () => {
             const results = await searchTasksByTitle(normalized, 20);
             setSearchResults(results || []);
         } catch (error) {
-            console.error("Ошибка при поиске задач:", error);
+            console.error("❌ Ошибка при поиске задач:", error);
             setSearchResults([]);
             alert('Ошибка при поиске задач');
         } finally {
@@ -124,7 +140,7 @@ const CalendarPage = () => {
             <div className="calendar-container">
                 <Calendar
                     refresh={refreshCalendar}
-                    onDayClick={setSelectedDate}
+                    onDayClick={handleDayClick}
                     onTasksLoaded={setTasksByDate}
                 /> 
             </div>

@@ -17,7 +17,7 @@ const apiFetch = async (endpoint, options = {}) => {
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 секунд
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
     const response = await fetch(url, {
@@ -41,7 +41,7 @@ const apiFetch = async (endpoint, options = {}) => {
     }
 
     if (response.status === 204) {
-      return true; // для DELETE часто возвращают 204
+      return true;
     }
 
     const contentType = response.headers.get('content-type');
@@ -76,23 +76,24 @@ export const getCurrentUser = () => {
 };
 
 // ────────────────────────────────────────────────
+
+const dateFormatter = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const fetchTasks = async (startDate, endDate) => {
   const user = getCurrentUser();
   
   if (!user || !user.id) {
-    console.log('❌ Нет авторизованного пользователя или отсутствует ID');
+    console.log('❌ Нет авторизованного пользователя');
     return {};
   }
-  
-  const dateFormatter = (date) => {
-    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-      return '';
-    }
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
 
   const params = new URLSearchParams({
     date_from: dateFormatter(startDate),
@@ -101,65 +102,40 @@ export const fetchTasks = async (startDate, endDate) => {
   }).toString();
 
   try {
-    const url = `/tasks?${params}`;
-    console.log('🔍 Запрос задач для пользователя:', user.id, 'URL:', url);
+    const url = `/task?${params}`;
+    console.log('🔍 Запрос задач для пользователя:', user.id);
     
     const data = await apiFetch(url);
-    console.log('📦 Полученные данные (RAW):', data);
-    console.log('📦 Тип данных:', typeof data);
-    console.log('📦 Это массив?', Array.isArray(data));
+    console.log('📦 Полученные данные:', data);
     
-    let tasksArray = [];
-    
-    // Проверяем разные варианты ответа сервера
-    if (Array.isArray(data)) {
-      // Если сервер вернул массив задач
-      console.log('✅ Сервер вернул массив задач, длина:', data.length);
-      tasksArray = data;
-    } 
-    else if (data && data.tasks && Array.isArray(data.tasks)) {
-      // Если сервер вернул объект с полем tasks
-      console.log('✅ Сервер вернул объект с полем tasks, длина:', data.tasks.length);
-      tasksArray = data.tasks;
-    }
-    else if (data && typeof data === 'object') {
-      // Если сервер вернул объект, возможно ключи - это даты
-      console.log('⚠️ Нестандартный формат ответа, пробуем обработать как объект');
-      // Возможно, ответ уже сгруппирован
-      return data;
-    }
-    else {
-      console.log('⚠️ Неизвестный формат ответа:', data);
+    if (!data) {
+      console.log('⚠️ Нет данных');
       return {};
     }
     
-    console.log('📋 Всего задач получено:', tasksArray.length);
+    let tasksArray = [];
+    if (data.tasks && Array.isArray(data.tasks)) {
+      tasksArray = data.tasks;
+    } else if (Array.isArray(data)) {
+      tasksArray = data;
+    } else {
+      console.log('⚠️ Неизвестный формат:', data);
+      return {};
+    }
     
-    // Группируем задачи по датам
+    console.log('📋 Всего задач:', tasksArray.length);
+    
     const groupedTasks = {};
     
     tasksArray.forEach(task => {
-      console.log(`📌 Обработка задачи #${task.id}:`, {
-        title: task.title,
-        task_date: task.task_date,
-        due_time: task.due_time
-      });
-      
       let taskDate = null;
       
-      // Определяем дату задачи
       if (task.task_date) {
         if (typeof task.task_date === 'string') {
-          // Если строка, берем первые 10 символов (YYYY-MM-DD)
-          taskDate = task.task_date.slice(0, 10);
+          taskDate = task.task_date.split('T')[0];
         } else if (task.task_date instanceof Date) {
-          const date = task.task_date;
-          taskDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          taskDate = dateFormatter(task.task_date);
         }
-      } 
-      else if (task.due_time && typeof task.due_time === 'string') {
-        // Если есть due_time, берем из него дату
-        taskDate = task.due_time.slice(0, 10);
       }
       
       if (!taskDate) {
@@ -167,25 +143,24 @@ export const fetchTasks = async (startDate, endDate) => {
         return;
       }
       
-      console.log(`✅ Задача ${task.id} отнесена к дате: ${taskDate}`);
+      console.log(`📌 Задача ${task.id}: "${task.title}" на ${taskDate}`);
       
       if (!groupedTasks[taskDate]) {
         groupedTasks[taskDate] = [];
       }
-      groupedTasks[taskDate].push(task);
+      
+      groupedTasks[taskDate].push({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        due_time: task.due_time,
+        priority: task.priority,
+        task_date: taskDate
+      });
     });
     
-    // Сортируем задачи по времени
-    for (const date in groupedTasks) {
-      groupedTasks[date].sort((a, b) => {
-        const timeA = a.due_time ? new Date(`2000-01-01T${a.due_time}`) : 0;
-        const timeB = b.due_time ? new Date(`2000-01-01T${b.due_time}`) : 0;
-        return timeA - timeB;
-      });
-    }
-    
-    console.log('✅ Сгруппированные задачи по датам:', Object.keys(groupedTasks));
-    console.log('🎯 Пример сгруппированных задач:', groupedTasks);
+    console.log('✅ Сгруппировано по датам:', Object.keys(groupedTasks));
     
     return groupedTasks;
     
@@ -194,6 +169,9 @@ export const fetchTasks = async (startDate, endDate) => {
     return {};
   }
 };
+
+// ────────────────────────────────────────────────
+
 export const createTask = async (taskData) => {
   try {
     const user = getCurrentUser();
@@ -214,7 +192,7 @@ export const createTask = async (taskData) => {
 
     console.log('[createTask] Отправляем:', formattedData);
 
-    const response = await apiFetch('/tasks', {
+    const response = await apiFetch('/task', {
       method: 'POST',
       body: JSON.stringify(formattedData),
     });
@@ -226,21 +204,40 @@ export const createTask = async (taskData) => {
     throw error;
   }
 };
+
 // ────────────────────────────────────────────────
 
 export const updateTask = async (taskId, taskData) => {
   try {
-    const formattedData = {
-      title: taskData.title ?? null,
-      description: taskData.description ?? null,
-      status: taskData.status !== undefined ? taskData.status : null,  // ✅ правильная обработка false
-      due_time: taskData.due_time ? `${taskData.due_time}:00` : null,
-      priority: taskData.priority ?? null,
-    };
+    const formattedData = {};
+    
+    if (taskData.title !== undefined) {
+      formattedData.title = taskData.title;
+    }
+    if (taskData.description !== undefined) {
+      formattedData.description = taskData.description;
+    }
+    if (taskData.status !== undefined) {
+      formattedData.status = taskData.status;
+    }
+    if (taskData.due_time !== undefined && taskData.due_time !== null && taskData.due_time !== '') {
+      let timeStr = taskData.due_time;
+      if (typeof timeStr === 'string' && timeStr.includes(':')) {
+        const [hours, minutes] = timeStr.split(':');
+        formattedData.due_time = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00`;
+      } else {
+        formattedData.due_time = null;
+      }
+    } else {
+      formattedData.due_time = null;
+    }
+    if (taskData.priority !== undefined) {
+      formattedData.priority = taskData.priority;
+    }
 
     console.log(`[updateTask #${taskId}] Отправляем:`, formattedData);
 
-    return await apiFetch(`/tasks/${taskId}`, {
+    return await apiFetch(`/task/${taskId}`, {
       method: 'PUT',
       body: JSON.stringify(formattedData),
     });
@@ -254,7 +251,7 @@ export const updateTask = async (taskId, taskData) => {
 
 export const getTaskById = async (taskId) => {
   try {
-    return await apiFetch(`/tasks/${taskId}`);
+    return await apiFetch(`/task/${taskId}`);
   } catch (error) {
     console.error("Ошибка при получении задачи:", error);
     throw error;
@@ -265,7 +262,7 @@ export const getTaskById = async (taskId) => {
 
 export const deleteTask = async (taskId) => {
   try {
-    await apiFetch(`/tasks/${taskId}`, {
+    await apiFetch(`/task/${taskId}`, {
       method: 'DELETE',
     });
     return true;
@@ -293,7 +290,7 @@ export const searchTasksByTitle = async (query, limit = 10) => {
       limit: String(Math.min(Math.max(1, limit), 100)),
     }).toString();
 
-    const data = await apiFetch(`/tasks/search/?${params}`);
+    const data = await apiFetch(`/task/search/?${params}`);
     return Array.isArray(data) ? data : (data?.tasks || []);
   } catch (error) {
     console.error("Ошибка при поиске задач:", error);
@@ -305,7 +302,7 @@ export const searchTasksByTitle = async (query, limit = 10) => {
 
 export const createUser = async (userData) => {
   try {
-    return await apiFetch('/users', {  // Исправлено: /user -> /users
+    return await apiFetch('/users', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
@@ -323,7 +320,7 @@ export const loginUser = async (userData) => {
     const encodedPassword = encodeURIComponent(userData.password);
 
     const data = await apiFetch(
-      `/users/auth?login=${encodedLogin}&password=${encodedPassword}` // Исправлено: /user/user/auth -> /users/auth
+      `/users/auth?login=${encodedLogin}&password=${encodedPassword}`
     );
 
     if (data.token) {
@@ -342,7 +339,7 @@ export const loginUser = async (userData) => {
 
 // ────────────────────────────────────────────────
 
-export const getUserById = async (userId) => {  // Добавлена новая функция
+export const getUserById = async (userId) => {
   try {
     return await apiFetch(`/users/${userId}`);
   } catch (error) {
@@ -353,7 +350,7 @@ export const getUserById = async (userId) => {  // Добавлена новая
 
 export const updateUser = async (userId, userData) => {
   try {
-    return await apiFetch(`/users/${userId}`, {  // Исправлено: /user -> /users
+    return await apiFetch(`/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
     });
@@ -363,7 +360,7 @@ export const updateUser = async (userId, userData) => {
   }
 };
 
-export const deleteUser = async (userId) => {  // Добавлена новая функция
+export const deleteUser = async (userId) => {
   try {
     await apiFetch(`/users/${userId}`, {
       method: 'DELETE',

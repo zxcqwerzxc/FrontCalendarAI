@@ -1,19 +1,18 @@
-// src/components/TaskForm/TaskForm.js
-import React, { useState, useEffect } from 'react';  // ← ЭТО ВАЖНО!
+import React, { useState, useEffect } from 'react';
 import './TaskForm.css';
 
 const TaskForm = ({ isOpen, onClose, onSubmit, selectedDate, initialData = null }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueTime, setDueTime] = useState('');
-  const [taskDate, setTaskDate] = useState(selectedDate || '');
+  const [taskDate, setTaskDate] = useState('');
   const [priority, setPriority] = useState(3);
   const [error, setError] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    if (selectedDate) {
+    if (selectedDate && typeof selectedDate === 'string') {
       setTaskDate(selectedDate);
     }
   }, [selectedDate]);
@@ -44,7 +43,6 @@ const TaskForm = ({ isOpen, onClose, onSubmit, selectedDate, initialData = null 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Валидация
     if (!title.trim()) {
       setError('Название задачи обязательно');
       return;
@@ -53,28 +51,14 @@ const TaskForm = ({ isOpen, onClose, onSubmit, selectedDate, initialData = null 
       setError('Укажите дату');
       return;
     }
-    
-    const todayDate = new Date();
-    const selectedDateObj = new Date(taskDate);
-    todayDate.setHours(0, 0, 0, 0);
-    selectedDateObj.setHours(0, 0, 0, 0);
-    
-    // Проверка на прошлую дату только для новых задач
-    if (selectedDateObj < todayDate && !initialData) {
-      setError('Нельзя ставить задачу на прошедшую дату');
-      return;
-    }
-    
-    // Время обязательно
     if (!dueTime) {
       setError('Укажите время');
       return;
     }
     
-    // Проверка формата времени (HH:mm)
     const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
     if (!timeRegex.test(dueTime)) {
-      setError('Время должно быть в формате ЧЧ:мм (например, 14:30)');
+      setError('Время должно быть в формате ЧЧ:мм');
       return;
     }
 
